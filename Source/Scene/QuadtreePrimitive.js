@@ -59,6 +59,9 @@ define([
      *        Note that tiles will never be unloaded if they were used for rendering the last
      *        frame, so the actual number of resident tiles may be higher.  The value of
      *        this property will not affect visual quality.
+     * @param {Boolean} [options.additive=false] The refinement behavior of the quadtree.
+     *        True will set the additive behavior to the quadtree, where higher-detail tile data is added to the scene
+     *        False will set the replacement behavior, where higher-detail tile data replace lower-detail tile data.
      */
     function QuadtreePrimitive(options) {
         //>>includeStart('debug', pragmas.debug);
@@ -127,6 +130,16 @@ define([
          * @default 100
          */
         this.tileCacheSize = defaultValue(options.tileCacheSize, 100);
+
+        /**
+         * Gets or sets the refinement behavior of the quadtree.
+         * True will set the additive behavior to the quadtree, where higher-detail tile data is
+         * added to the scene. False will set the replacement behavior, where higher-detail tile
+         * data replace lower-detail tile data.
+         * @type {Boolean}
+         * @default false
+         */
+        this.additive = defaultValue(options.additive, false);
 
         this._occluders = new QuadtreeOccluders({
             ellipsoid : ellipsoid
@@ -417,6 +430,9 @@ define([
             } else if (queueChildrenLoadAndDetermineIfChildrenAreAllRenderable(primitive, tile)) {
                 // SSE is not good enough and children are loaded, so refine.
                 var children = tile.children;
+                if(primitive.additive === true) {
+                    addTileToRenderList(primitive, tile);
+                }
                 // PERFORMANCE_IDEA: traverse children front-to-back so we can avoid sorting by distance later.
                 for (i = 0, len = children.length; i < len; ++i) {
                     if (tileProvider.computeTileVisibility(children[i], frameState, occluders) !== Visibility.NONE) {
